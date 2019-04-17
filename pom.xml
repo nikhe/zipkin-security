@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.zipkin.security</groupId>
+  <artifactId>zipkin-security</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.resourceEncoding>UTF-8</project.build.resourceEncoding>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+
+    <!-- must match (ex. use spring-boot used by zipkin-server) -->
+    <spring-boot.version>2.1.4.RELEASE</spring-boot.version>
+    <armeria.version>0.83.0</armeria.version>
+    <zipkin.version>2.12.9</zipkin.version>
+  </properties>
+
+  <name>Zipkin Security</name>
+  <description>Zipkin Security</description>
+  <url>https://github.com/adriancole/zipkin-security</url>
+  <inceptionYear>2019</inceptionYear>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <!-- Import dependency management from Spring Boot -->
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.linecorp.armeria</groupId>
+      <artifactId>armeria-spring-boot-autoconfigure</artifactId>
+      <scope>provided</scope>
+      <version>${armeria.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- watch out! this will soon change to apache! -->
+      <groupId>io.zipkin.java</groupId>
+      <artifactId>zipkin-server</artifactId>
+      <version>${zipkin.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+      <version>4.12</version>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.12.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- mvn -N io.takari:maven:wrapper generates the ./mvnw script -->
+        <plugin>
+          <groupId>io.takari</groupId>
+          <artifactId>maven</artifactId>
+          <version>0.7.5</version>
+          <configuration>
+            <maven>3.6.1</maven>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring-boot.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>repackage</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <layoutFactory implementation="zipkin.layout.ZipkinLayoutFactory">
+              <name>zipkin</name>
+            </layoutFactory>
+            <classifier>module</classifier>
+          </configuration>
+          <dependencies>
+            <dependency>
+              <groupId>io.zipkin.layout</groupId>
+              <artifactId>zipkin-layout-factory</artifactId>
+              <version>0.0.4</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.0.0-M3</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <!-- https://github.com/spring-projects/spring-boot/issues/3426 transitive exclude doesn't work -->
+          <excludeGroupIds>
+            org.springframework.boot,org.springframework,com.fasterxml.jackson.core,com.google.auto.value,com.google.code.gson,com.google.guava,org.reactivestreams,com.google.code.findbugs,javax.annotation,ch.qos.logback,org.slf4j,io.netty,io.micrometer,org.hdrhistogram,org.latencyutils,com.linecorp.armeria,io.dropwizard.metrics,io.prometheus,javax.inject,org.apache.logging.log4j,org.yaml
+          </excludeGroupIds>
+          <excludes>
+            <exclude>
+              <groupId>com.linecorp.armeria</groupId>
+              <artifactId>armeria-spring-boot-autoconfigure</artifactId>
+            </exclude>
+            <!-- See https://github.com/line/armeria/issues/1679 -->
+            <exclude>
+              <groupId>net.bytebuddy</groupId>
+              <artifactId>byte-buddy</artifactId>
+            </exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

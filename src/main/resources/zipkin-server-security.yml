@@ -1,0 +1,6 @@
+# When enabled, this allows shorter env properties (ex -Dspring.profiles.active=security)
+zipkin:
+  collector:
+    http:
+      username: ${ZIPKIN_HTTP_USERNAME:zipkin}
+      password: ${ZIPKIN_HTTP_PASSWORD:harpoon}
