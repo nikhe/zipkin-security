@@ -14,13 +14,24 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 @EnableConfigurationProperties(ZipkinSecurityProperties.class)
 class ZipkinSecurityModule {
 
-  @Bean ArmeriaServerConfigurator securityConfigurator(ZipkinSecurityProperties props) {
-    return sb -> {
-      // NOTE: this actually blocks everything, not just POST!
-      Authorizer<BasicToken> basicAuthorizer = (ctx, token) -> completedFuture(
-          props.getUsername().equals(token.username()) && props.getPassword()
-              .equals(token.password()));
-      sb.decorator(AuthService.builder().addBasicAuth(basicAuthorizer).newDecorator());
+  /**
+   * This protects the /api endpoints, while leaving others used by the UI and health-check
+   * anonymous.
+   */
+  @Bean
+  ArmeriaServerConfigurator securityConfigurator(ZipkinSecurityProperties props) {
+    return (sb) -> {
+      Authorizer<BasicToken> basicAuthorizer =
+          (ctx, token) -> completedFuture(basicAuthorize(props, token));
+      sb.routeDecorator().pathPrefix("/api")
+          .build(AuthService.builder()
+              .addBasicAuth(basicAuthorizer)
+              .newDecorator());
     };
+  }
+
+  static boolean basicAuthorize(ZipkinSecurityProperties props, BasicToken token) {
+    return props.getUsername().equals(token.username())
+        && props.getPassword().equals(token.password());
   }
 }

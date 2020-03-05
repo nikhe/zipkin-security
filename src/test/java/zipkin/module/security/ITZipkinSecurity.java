@@ -59,6 +59,22 @@ public class ITZipkinSecurity {
       .tlsCustomizer(b -> b.trustManager(InsecureTrustManagerFactory.INSTANCE))
       .build();
 
+  @Test public void callGetHealthWithoutPassword_HTTP() {
+    AggregatedHttpResponse response = callGetHealthWithoutPassword(SessionProtocol.HTTP);
+
+    assertThat(response.status()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test public void callGetHealthWithoutPassword_HTTPS() {
+    AggregatedHttpResponse response = callGetHealthWithoutPassword(SessionProtocol.HTTPS);
+
+    assertThat(response.status()).isEqualTo(HttpStatus.OK);
+  }
+
+  AggregatedHttpResponse callGetHealthWithoutPassword(SessionProtocol http) {
+    return client(http).get("/health").aggregate().join();
+  }
+
   @Test public void callGetServicesWithoutPassword_HTTP() {
     AggregatedHttpResponse response = callGetServicesWithoutPassword(SessionProtocol.HTTP);
 
@@ -72,7 +88,7 @@ public class ITZipkinSecurity {
   }
 
   AggregatedHttpResponse callGetServicesWithoutPassword(SessionProtocol http) {
-    return client(http).get("/health").aggregate().join();
+    return client(http).get("/api/v2/services").aggregate().join();
   }
 
   @Test public void callGetServicesWithPassword_HTTP() {
