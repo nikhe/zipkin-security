@@ -1,5 +1,8 @@
 # When enabled, this allows shorter env properties (ex -Dspring.profiles.active=security)
 zipkin:
+  internal:
+    module:
+      security: zipkin.module.security.ZipkinSecurityModule
   collector:
     http:
       username: ${ZIPKIN_HTTP_USERNAME:zipkin}

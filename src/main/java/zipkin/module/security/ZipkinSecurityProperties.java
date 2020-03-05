@@ -1,4 +1,4 @@
-package zipkin2.autoconfigure.security;
+package zipkin.module.security;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

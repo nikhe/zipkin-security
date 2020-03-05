@@ -11,15 +11,14 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package zipkin2.autoconfigure.security;
+package zipkin.module.security;
 
 import com.linecorp.armeria.client.ClientFactory;
-import com.linecorp.armeria.client.ClientFactoryBuilder;
-import com.linecorp.armeria.client.HttpClient;
-import com.linecorp.armeria.common.AggregatedHttpMessage;
-import com.linecorp.armeria.common.HttpHeaders;
+import com.linecorp.armeria.client.WebClient;
+import com.linecorp.armeria.common.AggregatedHttpResponse;
 import com.linecorp.armeria.common.HttpMethod;
 import com.linecorp.armeria.common.HttpStatus;
+import com.linecorp.armeria.common.RequestHeaders;
 import com.linecorp.armeria.common.SessionProtocol;
 import com.linecorp.armeria.server.Server;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -40,9 +39,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>This is inspired by com.linecorp.armeria.spring.ArmeriaSslConfigurationTest
  */
 @SpringBootTest(
-    classes = {ZipkinServer.class, ZipkinSecurityAutoConfiguration.class},
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+    classes = {ZipkinServer.class, ZipkinSecurityModule.class},
+    webEnvironment = SpringBootTest.WebEnvironment.NONE, // RANDOM_PORT requires spring-web
     properties = {
+        "server.port=0",
         "spring.config.name=zipkin-server,zipkin-server-security",
         "armeria.ssl.enabled=true",
         "armeria.ports[1].port=0",
@@ -55,47 +55,49 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ITZipkinSecurity {
   @Autowired Server server;
 
-  // We typically use OkHttp in our tests, but Armeria bundles a handy insecure trust manager
-  final ClientFactory clientFactory = new ClientFactoryBuilder()
-      .sslContextCustomizer(b -> b.trustManager(InsecureTrustManagerFactory.INSTANCE))
+  final ClientFactory clientFactory = ClientFactory.builder()
+      .tlsCustomizer(b -> b.trustManager(InsecureTrustManagerFactory.INSTANCE))
       .build();
 
   @Test public void callGetServicesWithoutPassword_HTTP() {
-    AggregatedHttpMessage response = callGetServicesWithoutPassword(SessionProtocol.HTTP);
+    AggregatedHttpResponse response = callGetServicesWithoutPassword(SessionProtocol.HTTP);
 
     assertThat(response.status()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
   @Test public void callGetServicesWithoutPassword_HTTPS() {
-    AggregatedHttpMessage response = callGetServicesWithoutPassword(SessionProtocol.HTTPS);
+    AggregatedHttpResponse response = callGetServicesWithoutPassword(SessionProtocol.HTTPS);
 
     assertThat(response.status()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
-  AggregatedHttpMessage callGetServicesWithoutPassword(SessionProtocol http) {
-    return HttpClient.of(clientFactory, baseUrl(server, http))
-        .get("/health")
-        .aggregate().join();
+  AggregatedHttpResponse callGetServicesWithoutPassword(SessionProtocol http) {
+    return client(http).get("/health").aggregate().join();
   }
 
   @Test public void callGetServicesWithPassword_HTTP() {
-    AggregatedHttpMessage response = callGetServicesWithPassword(SessionProtocol.HTTP);
+    AggregatedHttpResponse response = callGetServicesWithPassword(SessionProtocol.HTTP);
 
     assertThat(response.status()).isEqualTo(HttpStatus.OK);
   }
 
   @Test public void callGetServicesWithPassword_HTTPS() {
-    AggregatedHttpMessage response = callGetServicesWithPassword(SessionProtocol.HTTPS);
+    AggregatedHttpResponse response = callGetServicesWithPassword(SessionProtocol.HTTPS);
 
     assertThat(response.status()).isEqualTo(HttpStatus.OK);
   }
 
-  AggregatedHttpMessage callGetServicesWithPassword(SessionProtocol http) {
-    return HttpClient.of(clientFactory, baseUrl(server, http))
-        .execute(HttpHeaders.of(HttpMethod.GET, "/api/v2/services").set(
-            HttpHeaderNames.AUTHORIZATION, "basic " +
-                Base64.getEncoder().encodeToString("zipkin:harpoon".getBytes())))
+  AggregatedHttpResponse callGetServicesWithPassword(SessionProtocol http) {
+    return client(http)
+        .execute(RequestHeaders.builder(HttpMethod.GET, "/api/v2/services")
+            .add(HttpHeaderNames.AUTHORIZATION, "basic " +
+                Base64.getEncoder().encodeToString("zipkin:harpoon".getBytes()))
+            .build())
         .aggregate().join();
+  }
+
+  WebClient client(SessionProtocol http) {
+    return WebClient.builder(baseUrl(server, http)).factory(clientFactory).build();
   }
 
   static String baseUrl(Server server, SessionProtocol protocol) {

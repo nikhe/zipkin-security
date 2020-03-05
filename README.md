@@ -2,9 +2,8 @@
 
 ## Overview
 
-This is a Spring Boot [AutoConfiguration](http://docs.spring.io/spring-boot/docs/current/reference/html/using-boot-auto-configuration.html)
-module that can be added to a [Zipkin Server](https://github.com/openzipkin/zipkin/tree/master/zipkin-server) 
-deployment to secure the http endpoint with a password.
+This is a module that can be added to a [Zipkin Server](https://github.com/openzipkin/zipkin/tree/master/zipkin-server)
+deployment to secure the HTTP POST endpoint with a password.
 
 ## Experimental
 * Note: This is currently experimental! *
@@ -22,7 +21,7 @@ For example (from the project root):
 ```bash
 $ curl -sSL https://zipkin.io/quickstart.sh | bash -s
 $ ./mvnw clean install -DskipTests
-$ cp autoconfigure/target/*module.jar security.jar
+$ cp target/*module.jar security.jar
 $ java \
     -Dloader.path='security.jar,security.jar!/lib' \
     -Dspring.profiles.active=security \
