@@ -10,13 +10,15 @@ This is example code and not meant to recommend security practice or how to mana
 
 The only reason this example was created was [so many keep asking to modify the server](https://github.com/openzipkin/zipkin/issues/782). They see Zipkin server uses Spring Boot and expect it to be the same as a normal application, when our server isn't normal. This code shows changing something like authentication has less to do with Spring Boot and more to do with the internals of how we implement our server, notably Armeria, and how we internally manage modules.
 
-## Do not pay too much attention that this uses ENV variables
-ENV variables are used only here as a toy: your real code will likely read from another source. If you make code based on this, and ENV variables aren't working for you, just change the code to what does work for you.
+## Do not pay too much attention that this uses a properties file
+The "zipkin-server-security.properties" file is only here as a toy: your real code will likely read from another, possibly encrypted, source that can be updated at runtime. If you make code based on this, and properties aren't working for you, just change the code to what does work for you.
 
 ## This is not supported by OpenZipkin
-If you decide to make a custom add-on instead of an alternate like a proxy, you are welcome to use this if it helps. However, it will be up to you to support it. The way we connect modules together is very sensitive to versions and considered an implementation detail. The OpenZipkin community supports our default builds, not custom ones.
+If you raise an issue against this repository, it might be answered, but please don't ask OpenZipkin chat for support. This is not an OpenZipkin supported project, rather a personal example.
 
-Please don't ask our chat for Spring Boot support, like how to set properties instead of ENV variables etc. [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) covers that, if helpful to you. We don't have enough resources to support custom servers, so this code is "use at your own risk" technology.
+Rather than asking questions here about Spring Boot topics such as how to set properties, please look at [Spring Boot documentation](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html) or the many answers available on StackOverflow or other Spring Boot forums.
+
+Finally, using this is more difficult than an alternative such as an authenticated proxy. That's precisely why it is not supported. If the struggle is too difficult, or keeping up to date is difficult, please consider using another approach. The way this project works is very sensitive to versions and considered an implementation detail of Zipkin.
 
 ## Quick start
 
@@ -39,32 +41,51 @@ $ java \
     org.springframework.boot.loader.PropertiesLauncher
 ```
 
-After executing these steps, http POST access will require a password
+See the [Running](#running) section for more examples.
+
+After executing these steps, HTTP POST access will require a password
  * http://localhost:9411/api/v2/spans (or the legacy endpoint http://localhost:9411/api/v1/spans)
+
+Ex. Unless you pass the default password, POST requests will fail with a 401: Here's the default password:
+```bash
+$ curl -u zipkin:harpoon -X POST -s localhost:9411/api/v2/spans -H'Content-Type: application/json' -d '[]'
+```
+
+### Configuration
+This example only uses two Spring properties:
+
+|Spring property           | Value                                 |
+|--------------------------|---------------------------------------|
+|zipkin.api.username | Basic Auth username. Default: zipkin  |
+|zipkin.api.password | Basic Auth password. Default: harpoon |
+
+You can change the default credentials by editing "zipkin-server-security.properties" and restarting.
 
 The Zipkin server can be further configured as described in the
 [Zipkin server documentation](https://github.com/openzipkin/zipkin/blob/master/zipkin-server/README.md).
 
-### Configuration
-
-Configuration can be applied either through environment variables or an external Zipkin
-configuration file. The module includes default configuration that can be used as a 
-[reference](src/main/resources/zipkin-server-security.yml)
-for users that prefer a file based approach.
-
-#### Environment Variables
-
-|Environment Variable | Value                                 |
-|---------------------|---------------------------------------|
-|ZIPKIN_HTTP_USERNAME | Basic Auth username. Default: zipkin  |
-|ZIPKIN_HTTP_PASSWORD | Basic Auth password. Default: harpoon |
-
 ### Running
+Here is how to run Zipkin with the security module in Shell and PowerShell (Windows).
+
+*Note* In both cases, this uses the "zipkin-server-security.properties" file in the current directory for the username and password. Edit this to change it.
+
+Shell (`sh` or `bash`):
+``` bash
+java -Dloader.path='security.jar,security.jar!/lib' -Dspring.profiles.active=security -cp zipkin.jar org.springframework.boot.loader.PropertiesLauncher
+```
+
+PowerShell (Windows):
+``` bash
+java '-Dloader.path=security.jar,security.jar!/lib' '-Dspring.profiles.active=security' -cp zipkin.jar org.springframework.boot.loader.PropertiesLauncher
+```
+
+After either of these, uploads to the server will be constrained to the password:
 
 ```bash
-$ java \
-    -Dloader.path='security.jar,security.jar!/lib' \
-    -Dspring.profiles.active=security \
-    -cp zipkin.jar \
-    org.springframework.boot.loader.PropertiesLauncher
+# this is unauthorized as it doesn't have a password
+curl -X POST -s localhost:9411/api/v2/spans -H'Content-Type: application/json' -d '[]'
+# this is unauthorized as it has the wrong password
+curl -u flash:thunder -X POST -s localhost:9411/api/v2/spans -H'Content-Type: application/json' -d '[]'
+# this is authorized as it has the right password
+curl -u zipkin:harpoon -X POST -s localhost:9411/api/v2/spans -H'Content-Type: application/json' -d '[]'
 ```

@@ -16,9 +16,9 @@
     <maven.compiler.target>1.8</maven.compiler.target>
 
     <!-- must match (ex. use spring-boot used by zipkin-server) -->
-    <spring-boot.version>2.2.4.RELEASE</spring-boot.version>
-    <armeria.version>0.98.3</armeria.version>
-    <zipkin.version>2.20.0</zipkin.version>
+    <spring-boot.version>2.2.5.RELEASE</spring-boot.version>
+    <armeria.version>0.98.4</armeria.version>
+    <zipkin.version>2.20.1</zipkin.version>
   </properties>
 
   <name>Zipkin Security</name>

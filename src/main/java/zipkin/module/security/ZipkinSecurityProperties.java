@@ -2,10 +2,10 @@ package zipkin.module.security;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties("zipkin.collector.http")
+@ConfigurationProperties("zipkin.api")
 class ZipkinSecurityProperties {
-  private String username;
-  private String password;
+  String username = "zipkin";
+  String password = "harpoon";
 
   public String getUsername() {
     return username;

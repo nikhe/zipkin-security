@@ -3,7 +3,3 @@ zipkin:
   internal:
     module:
       security: zipkin.module.security.ZipkinSecurityModule
-  collector:
-    http:
-      username: ${ZIPKIN_HTTP_USERNAME:zipkin}
-      password: ${ZIPKIN_HTTP_PASSWORD:harpoon}
